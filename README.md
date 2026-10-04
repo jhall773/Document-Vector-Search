@@ -1,0 +1,2 @@
+This application was created to help an engineer at an aerospace/defense contractor search through a folder full of technical product and manual documents (in '.pdf', '.doc', or '.docx' format) using key words and phrases. 
+The user-typed query, keyword, or phrase is embedded with a free open-source embeddings model from langchain and compared to a vectorized sqlite database that also created embeddings for the technical documents by the same embeddings model.
