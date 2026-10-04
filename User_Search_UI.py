@@ -41,6 +41,8 @@ class App(tk.Tk):
 # ============================================================
 # Page 1 — Folder Selection Page
 # ============================================================
+from tkinter import filedialog
+
 class FolderSelectPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -52,76 +54,44 @@ class FolderSelectPage(ttk.Frame):
         ttk.Label(self, text="Note: Only .pdf, .doc, .docx files will be processed.",
                   font=("Arial", 12)).pack(pady=10)
 
-        # --- Load folders from Downloads ---
-        self.downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+        # ============================================================
+        # MANUAL TYPING OPTION
+        # ============================================================
+        ttk.Label(self, text="Enter Folder Path:", font=("Arial", 12)).pack(pady=5)
 
-        # --- Filter folders by valid docs ---
-        def folder_has_valid_docs(folder_path):
-            try:
-                files = os.listdir(folder_path)
-                files = sorted(files, key=lambda f: os.path.getmtime(os.path.join(folder_path, f)), reverse=True)
-                latest = files[:15]
-                valid_exts = (".pdf", ".docx", ".doc")
-                return any(f.lower().endswith(valid_exts) for f in latest)
-            except:
-                return False
-
-        self.all_folders = [
-            f for f in os.listdir(self.downloads_path)
-            if os.path.isdir(os.path.join(self.downloads_path, f))
-            and folder_has_valid_docs(os.path.join(self.downloads_path, f))
-        ]
-
-        # --- Filter Typebox ---
-        ttk.Label(self, text="Filter Folders:", font=("Arial", 12)).pack(pady=5)
-        self.filter_var = tk.StringVar()
-        filter_entry = ttk.Entry(self, textvariable=self.filter_var, width=40)
-        filter_entry.pack()
-        filter_entry.bind("<KeyRelease>", self.update_dropdown)
-
-        # --- Dropdown ---
         self.folder_var = tk.StringVar()
-        self.folder_dropdown = ttk.Combobox(
-            self,
-            textvariable=self.folder_var,
-            values=self.all_folders,
-            state="readonly",
-            width=40
-        )
-        self.folder_dropdown.pack(pady=10)
+        ttk.Entry(self, textvariable=self.folder_var, width=60).pack(pady=5)
+
+        # ============================================================
+        # BROWSE BUTTON (askdirectory)
+        # ============================================================
+        ttk.Button(self, text="Browse...", command=self.browse_folder).pack(pady=5)
 
         ttk.Button(self, text="Select Folder", command=self.select_folder).pack(pady=10)
-        ttk.Button(self, text="Continue to Search Page",
-                   command=self.continue_to_search).pack(pady=20)
+        ttk.Button(self, text="Continue to Search Page", command=self.continue_to_search).pack(pady=20)
 
     # ---------------------------------------------------------
-    # Update dropdown based on filter text
-    # ---------------------------------------------------------
-    def update_dropdown(self, event=None):
-        typed = self.filter_var.get().lower()
-
-        if typed.strip() == "":
-            filtered = self.all_folders
-        else:
-            filtered = [f for f in self.all_folders if typed in f.lower()]
-
-        self.folder_dropdown["values"] = filtered
-
-        # If the current selection no longer matches, clear it
-        if self.folder_var.get() not in filtered:
-            self.folder_var.set("")
+    def browse_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.folder_var.set(folder)
+            self.controller.selected_folder = folder
+            messagebox.showinfo("Folder Selected", f"Selected: {folder}")
 
     # ---------------------------------------------------------
     def select_folder(self):
-        selected = self.folder_var.get()
+        folder = self.folder_var.get().strip()
 
-        if not selected:
-            messagebox.showerror("Error", "Please select a folder first.")
+        if not folder:
+            messagebox.showerror("Error", "Please enter a folder path.")
             return
 
-        full_path = os.path.join(self.downloads_path, selected)
-        self.controller.selected_folder = full_path
-        messagebox.showinfo("Folder Selected", f"Selected: {full_path}")
+        if not os.path.isdir(folder):
+            messagebox.showerror("Error", "Folder does not exist.")
+            return
+
+        self.controller.selected_folder = folder
+        messagebox.showinfo("Folder Selected", f"Selected: {folder}")
 
     # ---------------------------------------------------------
     def continue_to_search(self):
@@ -130,42 +100,43 @@ class FolderSelectPage(ttk.Frame):
             return
 
         try:
-            if not self.controller.selected_folder:
-                messagebox.showerror("Error", "Please select a folder before continuing.")
-                return
-
             # Create popup window
             self.progress_win = tk.Toplevel(self)
             self.progress_win.title("Indexing Documents")
             self.progress_win.geometry("400x150")
 
-            ttk.Label(self.progress_win, text="Indexing documents...", font=("Arial", 14)).pack(pady=10)
+            ttk.Label(self.progress_win, text="Indexing documents...",
+                      font=("Arial", 14)).pack(pady=10)
 
-            self.progress_bar = ttk.Progressbar(self.progress_win, orient="horizontal",
-                                                length=300, mode="determinate", maximum=100)
+            self.progress_bar = ttk.Progressbar(
+                self.progress_win,
+                orient="horizontal",
+                length=300,
+                mode="determinate",
+                maximum=100
+            )
             self.progress_bar.pack(pady=10)
 
             ttk.Label(self.progress_win, text="This may take a moment.").pack()
 
             indexing_thread = threading.Thread(target=self.run_indexing)
-            indexing_thread.start() # Keeps UI thread from blocking. UI thread does not FREEZE waiting for create_embeddings_db to finish before executing its next UI updates.
-                                    # Instead, it keeps running as create_embeddings_db does its thing, and it just listens for it in the meantime to change its progress bar.
+            indexing_thread.start()
 
         except Exception as e:
             messagebox.showerror("Error", f"Embedding creation failed:\n{e}")
             return
 
+    # ---------------------------------------------------------
     def run_indexing(self):
         def progress_callback(current, total):
             percent = int((current / total) * 100)
             self.progress_bar.after(0, lambda: self.progress_bar.config(value=percent))
 
-        # Pass the selected folder and the progress_callback function directly into your create_embeddings_db function
+        # Pass the selected folder directly into your embedding function
         create_embeddings_db(self.controller.selected_folder, progress_callback)
 
         self.progress_win.destroy()
         self.controller.show_frame("SearchPage")
-
 
 
 # ============================================================
@@ -277,7 +248,7 @@ class SearchPage(ttk.Frame):
                 block,
                 wrap="none",      # <-- allows horizontal scrolling via canvas
                 height=10,
-                width=100         # <-- make it wide so horizontal scroll is useful
+                width=150         # <-- make it wide so horizontal scroll is useful
             )
             text_widget.pack(fill="both", expand=True, pady=5)
 
