@@ -7,6 +7,7 @@ from pypdf import PdfReader
 from docx import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
+from model_path import get_model_path
 
 # 4. Processing Engine for PDFs (with Page Tracking)
 def process_pdf(file_path, start_id, embeddings_model, text_splitter, db):
@@ -86,7 +87,7 @@ def create_embeddings_db(FOLDER_PATH, progress_callback=None):
 
     # 1. Initialize local 384-dimension embedding model
     print("🧠 Loading local 'all-MiniLM-L6-v2' model...")
-    embeddings_model = HuggingFaceEmbeddings(model_name="local_models/all-MiniLM-L6-v2")
+    embeddings_model = HuggingFaceEmbeddings(model_name=get_model_path())
 
 
     # 2. Text Splitter Configuration (Optimized for 256-word token limit)

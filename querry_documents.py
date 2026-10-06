@@ -2,10 +2,11 @@ import sqlite3
 import sqlite_vec
 import json
 from langchain_huggingface import HuggingFaceEmbeddings
+from model_path import get_model_path
 
 def search_local_docs(query_text, num_results=3):
     DB_NAME = "local_knowledge.db"
-    embeddings_model = HuggingFaceEmbeddings(model_name="local_models/all-MiniLM-L6-v2")
+    embeddings_model = HuggingFaceEmbeddings(model_name=get_model_path())
     
     db = sqlite3.connect(DB_NAME)
     db.enable_load_extension(True)
