@@ -248,7 +248,7 @@ class SearchPage(ttk.Frame):
                 block,
                 wrap="none",      # <-- allows horizontal scrolling via canvas
                 height=10,
-                width=250         # <-- make it wide so horizontal scroll is useful
+                width=350         # <-- make it wide so horizontal scroll is useful
             )
             text_widget.pack(fill="both", expand=True, pady=5)
 
