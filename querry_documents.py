@@ -5,7 +5,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 def search_local_docs(query_text, num_results=3):
     DB_NAME = "local_knowledge.db"
-    embeddings_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings_model = HuggingFaceEmbeddings(model_name="local_models/all-MiniLM-L6-v2")
     
     db = sqlite3.connect(DB_NAME)
     db.enable_load_extension(True)

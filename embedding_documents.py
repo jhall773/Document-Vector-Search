@@ -86,7 +86,8 @@ def create_embeddings_db(FOLDER_PATH, progress_callback=None):
 
     # 1. Initialize local 384-dimension embedding model
     print("🧠 Loading local 'all-MiniLM-L6-v2' model...")
-    embeddings_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings_model = HuggingFaceEmbeddings(model_name="local_models/all-MiniLM-L6-v2")
+
 
     # 2. Text Splitter Configuration (Optimized for 256-word token limit)
     text_splitter = RecursiveCharacterTextSplitter(
